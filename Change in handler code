@@ -1,0 +1,97 @@
+The error Failed to parse JSON: InvalidInput usually happens when the incoming JSON is malformed. Here's how to fix it:
+
+
+---
+
+✅ 1. Correct AWS IoT Publish Format:
+
+Ensure you’re sending a properly formatted JSON payload from AWS IoT:
+
+{
+  "message": "Hello from AWS IoT console",
+  "led_Control": "1"
+}
+
+💡 Important:
+
+Include a comma between fields.
+
+Ensure double quotes " are used around keys and values.
+
+
+
+---
+
+⚙️ 2. Improved Code to Handle Errors:
+
+Here’s an updated messageHandler with robust error checking:
+
+void messageHandler(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Incoming message from topic: ");
+  Serial.println(topic);
+
+  // Convert payload to string for easier debugging
+  String payloadString;
+  for (unsigned int i = 0; i < length; i++) {
+    payloadString += (char)payload[i];
+  }
+
+  Serial.println("Received Payload: " + payloadString);
+
+  // Deserialize JSON
+  StaticJsonDocument<256> doc;
+  DeserializationError error = deserializeJson(doc, payloadString);
+
+  if (error) {
+    Serial.print("Failed to parse JSON: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  // Extracting fields
+  const char* message = doc["message"];
+  const char* ledControl = doc["led_Control"];
+
+  if (message) {
+    Serial.print("Message: ");
+    Serial.println(message);
+  }
+
+  if (ledControl) {
+    Serial.print("LED Control Command: ");
+    Serial.println(ledControl);
+
+    if (strcmp(ledControl, "1") == 0) {
+      digitalWrite(lamp, HIGH);
+      Serial.println("Lamp_State changed to HIGH");
+    } else if (strcmp(ledControl, "0") == 0) {
+      digitalWrite(lamp, LOW);
+      Serial.println("Lamp_State changed to LOW");
+    } else {
+      Serial.println("Invalid LED command.");
+    }
+  } else {
+    Serial.println("led_Control field not found.");
+  }
+
+  Serial.println();
+}
+
+
+---
+
+🔍 3. Expected Output:
+
+When you publish the correct JSON from AWS, the output will now show the payload clearly:
+
+Incoming message from topic: esp32/sub
+Received Payload: {"message": "Hello from AWS IoT console", "led_Control": "1"}
+Message: Hello from AWS IoT console
+LED Control Command: 1
+Lamp_State changed to HIGH
+
+
+---
+
+Try this and let me know how it behaves! 😊
+
